@@ -162,12 +162,14 @@ def write_views(rows):
     dump("view_full_3000yr.csv", rows)
     dump("view_modern_era.csv", [r for r in rows if r["calendar_year"] >= 1880])
     dump("view_last_decade.csv", [r for r in rows if r["calendar_year"] >= PRESENT - 12])
+    dump("view_2000_present.csv", [r for r in rows if r["calendar_year"] >= 2000])
     # estimate vs actual, flagged + sorted by kind then year
     order = {"count": 0, "hybrid": 1, "estimate": 2}
     dump("view_estimate_vs_actual.csv",
          sorted(rows, key=lambda r: (order.get(r["kind"], 9), r["calendar_year"])))
     return ["view_full_3000yr.csv", "view_modern_era.csv",
-            "view_last_decade.csv", "view_estimate_vs_actual.csv"]
+            "view_last_decade.csv", "view_2000_present.csv",
+            "view_estimate_vs_actual.csv"]
 
 
 # ----------------------------------------------------------------------------
@@ -184,7 +186,7 @@ def _scatter(ax, rows, xkey):
                    edgecolors=st["color"], linewidths=1.8)
 
 
-def _legend(ax, kinds):
+def _legend(ax, kinds, loc="upper left"):
     handles = []
     for kind in ["count", "hybrid", "estimate"]:
         if kind not in kinds:
@@ -195,7 +197,7 @@ def _legend(ax, kinds):
                               markerfacecolor=(st["color"] if st["fill"] else "white"),
                               markeredgecolor=st["color"], markeredgewidth=1.8,
                               label=st["label"]))
-    ax.legend(handles=handles, frameon=False, fontsize=11, loc="upper left")
+    ax.legend(handles=handles, frameon=False, fontsize=11, loc=loc)
 
 
 def chart_full(rows):
@@ -293,9 +295,44 @@ def chart_est_vs_actual(rows):
     return out
 
 
+def chart_2000_present(rows):
+    """2000 to present, with a value label on every point."""
+    sub = sorted([r for r in rows if r["calendar_year"] >= 2000],
+                 key=lambda r: r["calendar_year"])
+    fig, ax = plt.subplots(figsize=(11, 6.19), dpi=150)
+    ax.plot([r["calendar_year"] for r in sub], [r["count"] for r in sub],
+            "-", color="#CCCCCC", zorder=1, lw=1.8)
+    _scatter(ax, sub, "calendar_year")
+    for r in sub:
+        ax.annotate(f'{int(r["count"]):,}',
+                    (r["calendar_year"], r["count"]),
+                    textcoords="offset points", xytext=(0, 12),
+                    ha="center", fontsize=12, color=INK, weight="bold")
+    xs = [r["calendar_year"] for r in sub]
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(x) for x in xs])
+    ax.set_xlim(min(xs) - 2, max(xs) + 2)
+    ax.set_ylim(0, max(r["count"] for r in sub) * 1.18)
+    ax.set_xlabel("Year (CE)")
+    ax.set_ylabel("Torrey pine count")
+    ax.set_title("Torrey pine counts, 2000–present",
+                 fontsize=15, color=INK, weight="bold", pad=12)
+    ax.grid(axis="y", color=GRID, lw=0.8)
+    ax.set_axisbelow(True)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    _legend(ax, {r["kind"] for r in sub}, loc="lower left")
+    fig.tight_layout()
+    out = os.path.join(CHARTS, "chart_2000_present.png")
+    fig.savefig(out, facecolor="white")
+    plt.close(fig)
+    return out
+
+
 def build_charts(rows):
     os.makedirs(CHARTS, exist_ok=True)
-    return [chart_full(rows), chart_modern(rows), chart_est_vs_actual(rows)]
+    return [chart_full(rows), chart_modern(rows),
+            chart_est_vs_actual(rows), chart_2000_present(rows)]
 
 
 # ----------------------------------------------------------------------------
@@ -346,11 +383,15 @@ def build_pptx(rows, charts, src_name):
         "chart_estimate_vs_actual.png":
             "Which numbers are measured vs. estimated. Only the 2006 and 2018 points are full manual counts; "
             "recent totals blend counts with planting/fire estimates.",
+        "chart_2000_present.png":
+            "The last ~25 years with values labeled. A gentle decline from the 2000 estimate (5,000) "
+            "through the 2006 and 2018 manual counts to the 2026 post-fire figure (3,950).",
     }
     titles = {
         "chart_full_3000yr.png": "The full record",
         "chart_modern_era.png": "Modern era (1880–2026)",
         "chart_estimate_vs_actual.png": "Estimate vs. hard count",
+        "chart_2000_present.png": "2000 to present",
     }
     for ch in charts:
         name = os.path.basename(ch)
