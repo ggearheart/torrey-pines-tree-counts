@@ -33,23 +33,45 @@ In the source spreadsheet:
 
 ## Usage
 
+Two build paths share the same data layer (`build.py` reads the newest
+`data/TPSNR_treecount_*.xlsx`).
+
+### Clean deck
+
 ```bash
 python3 build.py
 ```
 
-Reads the newest `data/TPSNR_treecount_*.xlsx`, then regenerates:
-
 ```
-views/   view_full_3000yr.csv · view_modern_era.csv
-         view_last_decade.csv · view_estimate_vs_actual.csv
+views/   view_full_3000yr.csv · view_modern_era.csv · view_last_decade.csv
+         view_2000_present.csv · view_estimate_vs_actual.csv
 charts/  chart_full_3000yr.png (log time axis) · chart_modern_era.png
-         chart_estimate_vs_actual.png
-TPSNR_treecount_slides.pptx   (6-slide starter deck)
+         chart_estimate_vs_actual.png · chart_2000_present.png
+TPSNR_treecount_slides.pptx
 ```
 
-To update: edit the spreadsheet (add rows, or save a new
-`TPSNR_treecount_version2.xlsx` — the script auto-picks the newest one) and
-re-run `build.py`.
+### Fancy deck (California State Parks theme)
+
+```bash
+python3 build_fancy.py
+```
+
+A themed variant with a CA State Parks-inspired palette (park green, California
+gold, coastal sky, Torrey Pines sandstone bluffs) and stylized wind-swept Torrey
+pine artwork behind the charts and slides. All artwork is drawn procedurally —
+no external image files — so it regenerates cleanly.
+
+```
+charts_fancy/  fancy_*.png + bg_title.png · bg_content.png
+TPSNR_treecount_slides_fancy.pptx
+```
+
+> To use real photos instead of the generated silhouettes, drop licensed images
+> in and adjust `scene_axes()` / the slide backgrounds in `build_fancy.py`.
+
+To update either deck: edit the spreadsheet (add rows, or save a new
+`TPSNR_treecount_version2.xlsx` — the scripts auto-pick the newest one) and
+re-run the relevant build script.
 
 ## Requirements
 
